@@ -10,7 +10,7 @@ DB_CONFIG = {
 }
 
 def create_tables():
-    """Создание таблиц в базе данных"""
+    """Создание сущностей в базе данных"""
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
@@ -57,36 +57,20 @@ def create_tables():
             cur.close()
             conn.close()
 
-def insert_test_data():
-    """Добавление тестовых данных"""
+def insert_test_data(query, values):
+    """Добавление некоторых данных в таблицу"""
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cur = conn.cursor()
         
         
-        cur.execute("""
-            INSERT INTO worker (workercode, name, middlename, lastname, department) 
-            VALUES 
-                (444, 'Николай', 'Николаевич', 'Николаев', 'Отдел продаж'),
-                (1, 'Иван', 'Иванович', 'Иванов', 'IT');
-        """)
+        cur.execute(query[0])
         
         
-        cur.execute("""
-            INSERT INTO payslip (slip_id, workercode, slip_date)
-            VALUES (678, 444, '2024-12-25');
-        """)
+        cur.execute(query[1])
         
         
-        cur.executemany("""
-            INSERT INTO payslip_item (slip_id, nomination, amount, quantity, description)
-            VALUES (%s, %s, %s, %s, %s)
-        """, [
-            (678, 'Оклад', 60000.00, 1, 'Основная зарплата'),
-            (678, 'Премия', 15000.00, 1, 'Премия за выполнение плана'),
-            (678, 'НДФЛ', -9750.00, 1, 'Налог на доходы физических лиц'),
-            (678, 'Итого', 65250.00, 1, 'Итоговая сумма к выплате')
-        ])
+        cur.executemany(query[2], values)
         
         conn.commit()
         print("Тестовые данные добавлены!")
@@ -149,5 +133,21 @@ def get_payslip(slip_id: int):
 
 if __name__ == "__main__":
     create_tables()
-    insert_test_data()
+    insert_test_data(query=["""
+            INSERT INTO worker (workercode, name, middlename, lastname, department) 
+            VALUES 
+                (444, 'Николай', 'Николаевич', 'Николаев', 'Отдел продаж'),
+                (1, 'Иван', 'Иванович', 'Иванов', 'IT');
+        """, """
+            INSERT INTO payslip (slip_id, workercode, slip_date)
+            VALUES (678, 444, '2024-12-25');
+        """, """
+            INSERT INTO payslip_item (slip_id, nomination, amount, quantity, description)
+            VALUES (%s, %s, %s, %s, %s)
+        """], values=[
+            (678, 'Оклад', 60000.00, 1, 'Основная зарплата'),
+            (678, 'Премия', 15000.00, 1, 'Премия за выполнение плана'),
+            (678, 'НДФЛ', -9750.00, 1, 'Налог на доходы физических лиц'),
+            (678, 'Итого', 65250.00, 1, 'Итоговая сумма к выплате')
+        ])
     get_payslip(678)
